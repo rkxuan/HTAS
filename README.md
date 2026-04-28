@@ -1,10 +1,10 @@
-## HATS
+## HTAS
 
 This is the official implementation of "Deploying Right Communication Topologies to Right Places in a Hybrid LLM-Driven Agent System"
 
-Our multi-agent scheme is named as HATS (Hybrid Multi-Agent Topology System).
+Our scheme is named as HTAS (Hybrid Topology for Multi-Agent System).
 
-We will further fix the bugs, update the applications of HATS in the future.
+We will further fix the bugs, update the applications of HTAS in the future.
 
 We refer to the <ins>GPTSwarm</ins> library to build our agentic graphs **src/** [https://github.com/metauto-ai/GPTSwarm](https://github.com/metauto-ai/GPTSwarm).
 
