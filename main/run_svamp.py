@@ -52,7 +52,7 @@ def parse_args():
                         help='The weight of topological sparse loss')
     parser.add_argument('--alpha2', type=float, default=0.0,
                         help='The weight of execuation length loss')
-    parser.add_argument('--temperature', type=float, default=0.0,
+    parser.add_argument('--temperature', type=float, default=1.0,
                         help="The temperture for Gumble-Softmax or Sigmoid in topology distribution")
     parser.add_argument("--normalization", type=str2bool, default=False,
                         help="Whether to use batch normalization in training, default False")
