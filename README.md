@@ -1,6 +1,6 @@
 ## HTAS
 
-This is the official implementation of "Deploying Right Communication Topologies to Right Places in a Hybrid LLM-Driven Agent System"
+This is the official implementation of "Integrating Strengths of Different Multi-Agent Workflows via Step-Aware Hybrid Topology Planning"
 
 Our scheme is named as HTAS (Hybrid Topology for Multi-Agent System).
 
