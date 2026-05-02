@@ -170,7 +170,8 @@ class Evaluator():
         lr: float = 0.1,
         alpha1: float = 0.0,
         alpha2: float = 0.0,
-        negative: bool = True,
+        temperature: float = 1.0,
+        normalization: bool = True,
     ) -> List[float]:
 
         assert self._system is not None
@@ -179,12 +180,12 @@ class Evaluator():
         print(f"Optimizing system on aqua split train")
         optimizer = torch.optim.Adam(self._system.connection_dist.parameters(), lr=lr)
 
-        def infinite_data_loader():  # 这个loader是可以无限加载数据的
+        def infinite_data_loader():
             perm = np.random.permutation(len(dataset))
             while True:
                 for idx in perm:
                     record = dataset[idx.item()]
-                    yield record  # 每进入一次，生成一个值，然后暂停等待下一次调用
+                    yield record
 
         loader = infinite_data_loader()
 
@@ -204,7 +205,7 @@ class Evaluator():
             correct_answers = []
             for i_record, record in zip(range(batch_size), loader):
                 edgelist, log_prob, sparse, nsteps = self._system.connection_dist.realize_para(
-                    # temperature=3.0, # DEBUG
+                    temperature=temperature
                 )
                 input_dict = record_to_system_input(record)
                 _system = deepcopy(self._system)
@@ -219,9 +220,8 @@ class Evaluator():
             print("time: {:.3f}".format(batch_time), end=" | ")
             total_time += batch_time
 
-            loss_list: List[torch.Tensor] = []
             utilities: List[float] = []
-            for answers, log_prob, sparse, nsteps, correct_answer in zip(answers_batch, log_probs, sparses, nstepss, correct_answers):
+            for answers, correct_answer in zip(answers_batch, correct_answers):
                 answer = aqua_get_predict(answers)
                 assert isinstance(correct_answer, str), \
                     f"String expected but got {correct_answer} of type {type(correct_answer)} (1)"
@@ -229,13 +229,18 @@ class Evaluator():
                 accuracy.update(answer, correct_answer)
                 utility = accuracy.get()
                 utilities.append(utility)
-                # single_loss = - log_prob * utility
-                if negative:
-                    single_loss = -log_prob * (2 * utility - 1) + alpha1 * sparse + alpha2 * nsteps / (
-                                nagents - 1 + 1e-12) * log_prob  # / (nagents-1) for normalization with the scale of system
-                else:
-                    single_loss = -log_prob * utility + alpha1 * sparse + alpha2 * nsteps / (
-                                nagents - 1 + 1e-12) * log_prob  # / (nagents-1) for normalization with the scale of system
+
+            utilities_tensor = torch.tensor(utilities, dtype=torch.float32, device=log_probs[0].device)
+            if normalization:
+                mean_uti = utilities_tensor.mean()
+                std_uti = utilities_tensor.std() + 1e-12
+                utilities_tensor = (utilities_tensor - mean_uti) / std_uti
+
+            loss_list: List[torch.Tensor] = []
+            for i, (log_prob, sparse, nsteps) in enumerate(zip(log_probs, sparses, nstepss)):
+                utility = utilities_tensor[i]
+                single_loss = -log_prob * utility + alpha1 * sparse + alpha2 * nsteps / (
+                                nagents - 1 + 1e-12) * log_prob
                 loss_list.append(single_loss)
 
             utilities_buffer.extend(utilities)
@@ -250,12 +255,6 @@ class Evaluator():
             print(accuracy_info, end=" | ")
             print(loss_info)
             self._logger.get_train_batch_record(i_batch_info + " | " + accuracy_info + " | " + loss_info)
-            # print("Grad:", self._system.connection_dist.edge_logits.grad)
-            # print("edge_logits:", self._system.connection_dist.edge_logits)
-            # print("edge_probs:", edge_probs)
-
-        # edgelist = self._system.connection_dist.realize()
-        # self._print_conns(edgelist, save_to_file=True)
 
         print("Done!")
         self._logger.get_train_time(total_time)

@@ -50,8 +50,10 @@ def parse_args():
                         help='The weight of topological sparse loss')
     parser.add_argument('--alpha2', type=float, default=0.0,
                         help='The weight of execuation length loss')
-    parser.add_argument("--negative", type=str2bool, default=True,
-                        help="Whether to use negative samples in training, default True.")
+    parser.add_argument('--temperature', type=float, default=0.0,
+                        help="The temperture for Gumble-Softmax or Sigmoid in topology distribution")
+    parser.add_argument("--normalization", type=str2bool, default=False,
+                        help="Whether to use batch normalization in training, default False")
     parser.add_argument("--pretrain", type=str2bool, default=False,
                         help="Whether to pretrain distribution of topology")
     parser.add_argument("--pretrain_systems", type=int, default=16,
@@ -78,7 +80,8 @@ async def main():
     lr = args.lr
     alpha1 = args.alpha1
     alpha2 = args.alpha2
-    negative = args.negative
+    temperature = args.temperature
+    normalization = args.normalization
     pretrain = args.pretrain
     pretrain_systems = 2 if debug else args.pretrain_systems 
     pretrain_iters = 2 if debug else args.pretrain_iterations
@@ -130,7 +133,8 @@ async def main():
             lr=lr,
             alpha1=alpha1,
             alpha2=alpha2,
-            negative=negative
+            temperature = temperature,
+            normalization=normalization
         )
         nquestions = batch_size*num_iters
         avg_completion_tokens = CompletionTokens.instance().value/(nquestions)

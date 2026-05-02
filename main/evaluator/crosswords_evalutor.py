@@ -160,7 +160,8 @@ class Evaluator():
         lr: float = 0.1,
         alpha1: float = 0.0,
         alpha2: float = 0.0,
-        negative: bool = True,
+        temperature: float = 1.0,
+        normalization: bool = True,
     ):
         assert self._system is not None
         nagents = len(self._system.agents)
@@ -168,11 +169,11 @@ class Evaluator():
         print(f"Optimizing system on crosswords split train")
         optimizer = torch.optim.Adam(self._system.connection_dist.parameters(), lr=lr)
 
-        def infinite_data_loader(): 
+        def infinite_data_loader():
             perm = np.random.permutation(len(dataset))
             while True:
                 for idx in perm:
-                    yield idx  
+                    yield idx
 
         loader = infinite_data_loader()
 
@@ -190,7 +191,7 @@ class Evaluator():
             nstepss = []
             for i_record, idx in zip(range(batch_size), loader):
                 edgelist, log_prob, sparse, nsteps = self._system.connection_dist.realize_para(
-                    # temperature=3.0, # DEBUG
+                    temperature=temperature
                 )
                 raw_inputs = record_to_system_input(self._train_env, idx)
                 _system = deepcopy(self._system)
@@ -205,17 +206,21 @@ class Evaluator():
             print("time: {:.3f}".format(batch_time), end=" | ")
             total_time += batch_time
 
-            loss_list: List[torch.Tensor] = []
             scores: List[float] = []
-            for answers, log_prob, sparse, nsteps in zip(answers_batch, log_probs, sparses, nstepss):
+            for answers in answers_batch:
                 score = crosswords_get_predict(answers)
                 scores.append(score)
-                if negative:
-                    single_loss = -log_prob * (2 * score - 1) + alpha1 * sparse + alpha2 * nsteps / (
-                                nagents - 1 + 1e-12) * log_prob  # / (nagents-1) for normalization with the scale of system
-                else:
-                    single_loss = -log_prob * score + alpha1 * sparse + alpha2 * nsteps / (
-                                nagents - 1 + 1e-12) * log_prob  # / (nagents-1) for normalization with the scale of system
+
+            scores_tensor = torch.tensor(scores, dtype=torch.float32, device=log_probs[0].device)
+            if normalization:
+                mean_score = scores_tensor.mean()
+                std_score = scores_tensor.std() + 1e-12
+                scores_tensor = (scores_tensor - mean_score) / std_score
+
+            loss_list: List[torch.Tensor] = []
+            for i, (log_prob, sparse, nsteps) in enumerate(zip(log_probs, sparses, nstepss)):
+                score = scores_tensor[i]
+                single_loss = -log_prob * score + alpha1 * sparse + alpha2 * nsteps / (nagents - 1 + 1e-12) * log_prob
                 loss_list.append(single_loss)
 
             mean_utility = np.mean(np.array(scores))

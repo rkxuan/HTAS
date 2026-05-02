@@ -47,7 +47,7 @@ hats/utils: Other needed functions or classes
 ## Implementation  
 
 MMLU: 
-* `!python experiment/run_mmlu.py --debug=True`
+* `!python main/run_mmlu.py --topology=Hybrid`
 
 AQuA: 
-* `!python experiment/run_aqua.py --debug=True`
+* `!python main/run_aqua.py --topology=Hybrid`
