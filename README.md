@@ -28,21 +28,18 @@ We use nine widely used benchmark datasets: MULL, GSM8K, SVAMP, MultiArith, AQuA
 
 ## Code Structure
 
-dataset: The data of benchmark datasets
-
-main: The codes for pre-processing datasets and running benchmark evaluations
-
-hats/environment: The specific definations of agents
-
-hats/llm: The APIs to call LLMs
-
-hats/pretraining: The implementation of LLM as topology initializer
-
-hats/topology: The definition of topologies and topological distributions
-
-hats/system: The implementation of the node-wise multi-agent system
-
-hats/utils: Other needed functions or classes
+```
+HTAS/
+├── hats/
+│   ├── environment/             # The specific definations of agents
+│   ├── llm/                     # The APIs to call LLMs
+│   ├── pretraining/             # The implementation of LLM as topology initializer
+│   ├── topology/                # The definition of topologies and topological distributions
+│   └── system/                  # The implementation of the node-wise multi-agent system
+│   └── utils/                   # Other needed functions or classes
+├── main/                        # The codes for pre-processing datasets and running benchmark evaluations
+└── dataset/                     # The data of benchmark datasets
+```
 
 ## Implementation  
 
